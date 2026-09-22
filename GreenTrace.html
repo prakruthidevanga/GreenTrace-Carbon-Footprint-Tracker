@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenTrace Visual</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#f0faf4;--bg2:#ffffff;--bg3:#e8f5ee;--card:#ffffff;
+  --bdr:#b8dfc8;--bdr2:#d4eedd;
+  --g:#16a34a;--gd:#15803d;--gbg:rgba(22,163,74,.08);--gbdr:rgba(22,163,74,.25);
+  --r:#dc2626;--rbg:rgba(220,38,38,.08);
+  --o:#ea580c;--obg:rgba(234,88,12,.08);
+  --y:#ca8a04;--ybg:rgba(202,138,4,.08);
+  --b:#2563eb;--bbg:rgba(37,99,235,.08);
+  --t:#0f2d1a;--t2:#1e5c35;--t3:#4a8c63;
+  --rr:10px;--rl:14px;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t);font-size:14px;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px;}
+
+/* LAYOUT */
+.layout{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── NAVBAR ── */
+.navbar{
+  position:sticky;top:0;z-index:200;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(14px);
+  border-bottom:1.5px solid var(--bdr);
+  box-shadow:0 1px 8px rgba(15,45,26,.06);
+}
+.nb-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 2.5rem;
+}
+.logo{display:flex;align-items:center;gap:.55rem;cursor:pointer;text-decoration:none;}
+.logo-box{width:28px;height:28px;border-radius:7px;background:var(--gbg);border:1px solid var(--gbdr);display:grid;place-items:center;font-size:.85rem;flex-shrink:0;}
+.logo-txt{font-size:.95rem;font-weight:800;color:var(--t);letter-spacing:-.01em;}
+.logo-txt b{color:var(--g);}
+.nb-right{display:flex;align-items:center;gap:.65rem;}
+.live-ind{display:flex;align-items:center;gap:.35rem;font-size:.68rem;color:var(--t2);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:glow 2s infinite;}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:.35}}
+.tb-tag{font-size:.62rem;font-weight:600;padding:.18rem .62rem;border-radius:20px;background:var(--gbg);color:var(--g);border:1px solid var(--gbdr);}
+.nb-links{
+  display:flex;align-items:center;gap:.08rem;
+  padding:.3rem 2.5rem .35rem;
+  overflow-x:auto;
+}
+.nl{
+  display:inline-flex;align-items:center;gap:.38rem;
+  padding:.38rem .95rem;border-radius:8px;
+  font-size:.8rem;font-weight:600;
+  color:var(--t2);cursor:pointer;border:none;
+  background:transparent;white-space:nowrap;
+  transition:all .13s;border-bottom:2.5px solid transparent;
+}
+.nl:hover{color:var(--g);background:rgba(22,163,74,.07);}
+.nl.on{color:var(--g);background:rgba(22,163,74,.09);border-bottom-color:var(--g);}
+.nl .ic{font-size:.82rem;}
+.nl .nbadge{font-size:.58rem;font-weight:700;background:var(--gbg);color:var(--g);padding:.06rem .38rem;border-radius:20px;margin-left:.15rem;border:1px solid var(--gbdr);}
+
+/* ── MAIN ── */
+.main-wrap{flex:1;display:flex;flex-direction:column;}
+
+/* breadcrumb bar */
+.breadbar{
+  height:34px;background:var(--bg);border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;padding:0 2.5rem;
+}
+.bc{font-size:.72rem;color:var(--t3);}
+.bc em{color:var(--t2);font-style:normal;}
+
+/* ── FOOTER ── */
+.site-footer{
+  background:#0f2d1a;
+  padding:2rem 2.5rem;
+  display:grid;grid-template-columns:1.4fr 1fr 1fr;
+  gap:2rem;margin-top:auto;
+  border-top:2px solid #1a4a2a;
+}
+@media(max-width:640px){.site-footer{grid-template-columns:1fr;}}
+.ft-brand .ft-logo{font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:.4rem;}
+.ft-brand .ft-logo b{color:#5cba7e;}
+.ft-brand p{font-size:.76rem;color:rgba(255,255,255,.45);line-height:1.6;max-width:260px;}
+.ft-col-ttl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.65rem;}
+.ft-links-list{display:flex;flex-direction:column;gap:.35rem;}
+.ft-links-list a{font-size:.8rem;color:rgba(255,255,255,.5);cursor:pointer;transition:.13s;text-decoration:none;}
+.ft-links-list a:hover{color:#5cba7e;}
+.ft-team-list{display:flex;flex-direction:column;gap:.3rem;}
+.ft-member{font-size:.8rem;color:rgba(255,255,255,.55);}
+.ft-copy{grid-column:1/-1;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,.08);font-size:.68rem;color:rgba(255,255,255,.25);text-align:center;}
+
+/* PAGES */
+.page{display:none;padding:1.5rem;}
+.page.on{display:block;animation:fadein .22s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEADER */
+.ph{margin-bottom:1.4rem;}
+.ph h1{font-size:1.25rem;font-weight:800;color:var(--t);letter-spacing:-.02em;margin-bottom:.18rem;}
+.ph p{font-size:.76rem;color:var(--t2);}
+
+/* KPI */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1.3rem;}
+.kpi{background:var(--card);border:1px solid var(--bdr);border-radius:var(--rl);padding:.95rem 1.05rem;}
+.kpi-ico{font-size:1rem;margin-bottom:.45rem;}
+.kv{font-size:1.6rem;font-weight:800;line-height:1;margin-bottom:.18rem;letter-spacing:-.02em;}
+.kv.g{color:var(--g);}.kv.r{color:var(--r);}.kv.o{color:var(--o);}.kv.b{color:var(--b);}
+.kl{font-size:.68rem;color:var(--t2);}
+.ks{font-size:.62rem;color:var(--t3);margin-top:.1rem;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden;margin-bottom:.9rem;}
+.card-hd{padding:.8rem 1.1rem;border-bottom:1px solid var(--bdr);}
+.card-hd-t{font-size:.78rem;font-weight:600;color:var(--t);}
+.card-hd-s{font-size:.66rem;color:var(--t3);margin-top:.08rem;}
+.card-bd{padding:1rem 1.1rem;}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:.9rem;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;}
+
+/* IMPACT BADGES */
+.ib{font-size:.61rem;font-weight:700;padding:.16rem .48rem;border-radius:20px;white-space:nowrap;display:inline-block;}
+.ih{background:var(--rbg);color:var(--r);border:1px solid rgba(239,68,68,.25);}
+.im{background:var(--obg);color:var(--o);border:1px solid rgba(249,115,22,.25);}
+.il{background:var(--ybg);color:var(--y);border:1px solid rgba(234,179,8,.25);}
+.ivl{background:var(--gbg);color:var(--g);border:1px solid var(--gbdr);}
+
+/* SCORE BAR */
+.sbar{display:flex;align-items:center;gap:.42rem;}
+.sbar-t{flex:1;height:4px;background:#d4eedd;border-radius:2px;overflow:hidden;}
+.sbar-f{height:100%;border-radius:2px;}
+.sbar-v{font-size:.68rem;font-weight:600;width:26px;text-align:right;}
+
+/* STAGE FLOW */
+.sf{display:flex;gap:0;margin-bottom:.9rem;}
+.sst{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;}
+.sst:not(:last-child)::after{content:'→';position:absolute;right:-8px;top:12px;font-size:.7rem;color:var(--t3);}
+.sst-ic{width:26px;height:26px;border-radius:50%;background:#d4eedd;border:1px solid var(--bdr);display:grid;place-items:center;font-size:.75rem;margin-bottom:.28rem;}
+.sst-n{font-size:.55rem;color:var(--t3);text-align:center;font-weight:500;line-height:1.3;}
+
+/* DASHBOARD TABLE */
+.dtbl{width:100%;border-collapse:collapse;}
+.dtbl th{font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:.4rem .65rem;text-align:left;border-bottom:1px solid var(--bdr);}
+.dtbl td{padding:.52rem .65rem;font-size:.76rem;border-bottom:1px solid var(--bdr2);color:var(--t);vertical-align:middle;}
+.dtbl tr:last-child td{border-bottom:none;}
+.dtbl tr:hover td{background:rgba(255,255,255,.015);cursor:pointer;}
+.pn{font-weight:600;}.pc{font-size:.65rem;color:var(--t3);}
+
+/* PRODUCT GRID */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.85rem;}
+.pcard{background:var(--card);border:1px solid var(--bdr);border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:.17s;display:flex;flex-direction:column;}
+.pcard:hover{border-color:rgba(34,197,94,.35);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3);}
+.pcard-top{padding:.95rem .95rem .75rem;flex:1;}
+.pc-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;}
+.pc-em{width:38px;height:38px;border-radius:9px;background:#d4eedd;display:grid;place-items:center;font-size:1.2rem;}
+.pc-name{font-size:.85rem;font-weight:700;color:var(--t);margin-bottom:.1rem;}
+.pc-cat{font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.68rem;}
+.pc-sb{height:4px;background:#d4eedd;border-radius:2px;overflow:hidden;margin-bottom:.4rem;}
+.pc-sf{height:100%;border-radius:2px;}
+.pc-sr{display:flex;justify-content:space-between;margin-bottom:.7rem;}
+.pc-sl{font-size:.6rem;color:var(--t3);}
+.pc-sv{font-size:.6rem;font-weight:600;color:var(--t2);}
+.pc-mets{display:grid;grid-template-columns:1fr 1fr;gap:.36rem;}
+.pm{background:#e8f5ee;border:1px solid #c8e8d5;border-radius:6px;padding:.42rem .55rem;}
+.pm-v{font-size:.72rem;font-weight:600;color:var(--t);}
+.pm-k{font-size:.56rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-top:.05rem;}
+.pcard-ft{padding:.58rem .95rem;border-top:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;}
+.pcard-ft span{font-size:.65rem;color:var(--t3);}
+.vlink{font-size:.68rem;font-weight:600;color:var(--g);background:transparent;border:none;cursor:pointer;}
+
+/* CONTROLS */
+.ctrls{display:flex;gap:.55rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.sbox{display:flex;align-items:center;gap:.42rem;background:#ffffff;border:1.5px solid var(--bdr);border-radius:var(--rr);padding:.42rem .75rem;flex:1;min-width:185px;transition:.12s;}
+.sbox:focus-within{border-color:var(--g);}
+.sbox input{flex:1;border:none;outline:none;background:transparent;font-family:'Inter',sans-serif;font-size:.78rem;color:var(--t);}
+.sbox input::placeholder{color:var(--t3);}
+.fpills{display:flex;gap:.28rem;flex-wrap:wrap;}
+.fp{padding:.26rem .65rem;border-radius:20px;font-family:'Inter',sans-serif;font-size:.65rem;font-weight:600;border:1px solid var(--bdr);background:transparent;color:var(--t3);cursor:pointer;transition:.12s;}
+.fp:hover,.fp.on{border-color:var(--g);color:var(--g);background:var(--gbg);}
+
+/* DRAWER */
+.ovl{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,45,20,.35);backdrop-filter:blur(3px);}
+.ovl.on{display:flex;justify-content:flex-end;}
+.drawer{width:min(540px,100vw);height:100vh;background:#f4fbf7;overflow-y:auto;animation:si .22s ease;border-left:1px solid var(--bdr);}
+@keyframes si{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.dr-hd{padding:1.1rem 1.3rem .85rem;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:#f4fbf7;z-index:10;display:flex;justify-content:space-between;align-items:flex-start;}
+.dr-em{font-size:1.6rem;margin-bottom:.25rem;}
+.dr-name{font-size:1.1rem;font-weight:700;color:var(--t);margin-bottom:.16rem;}
+.dr-meta{display:flex;align-items:center;gap:.4rem;}
+.dr-cat{font-size:.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;}
+.dr-x{width:26px;height:26px;border-radius:6px;background:var(--bg3);border:1px solid var(--bdr);color:var(--t3);cursor:pointer;font-size:.75rem;display:grid;place-items:center;transition:.12s;flex-shrink:0;}
+.dr-x:hover{background:var(--rbg);color:var(--r);border-color:rgba(239,68,68,.3);}
+.dr-body{padding:1.15rem;}
+.dr-score{background:#e8f5ee;border:1px solid var(--bdr);border-radius:var(--rr);padding:.9rem;margin-bottom:1rem;display:flex;gap:1.1rem;align-items:center;}
+.dbs{text-align:center;flex-shrink:0;}
+.dbs-n{font-size:2.5rem;font-weight:800;line-height:1;letter-spacing:-.03em;}
+.dbs-l{font-size:.56rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-top:.14rem;}
+.dr-bars{flex:1;display:flex;flex-direction:column;gap:.4rem;}
+.drb{display:flex;align-items:center;gap:.48rem;}
+.drb-l{font-size:.63rem;color:var(--t3);width:42px;flex-shrink:0;}
+.drb-t{flex:1;height:5px;background:#d4eedd;border-radius:3px;overflow:hidden;}
+.drb-f{height:100%;border-radius:3px;}
+.drb-v{font-size:.63rem;font-weight:600;color:var(--t2);width:40px;text-align:right;}
+.sec-l{font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:.65rem;}
+.lc-wrap{position:relative;margin-bottom:1rem;}
+.lc-wrap::before{content:'';position:absolute;left:13px;top:19px;bottom:12px;width:1.5px;background:linear-gradient(var(--g),rgba(22,163,74,.08));}
+.lci{display:flex;gap:.65rem;padding:.48rem 0;}
+.lci-ic{width:26px;height:26px;border-radius:50%;flex-shrink:0;z-index:1;background:#e8f5ee;border:1px solid var(--bdr);display:grid;place-items:center;font-size:.75rem;}
+.lci-b{flex:1;padding-top:.22rem;}
+.lci-n{font-size:.75rem;font-weight:600;color:var(--t);margin-bottom:.11rem;}
+.lci-t{font-size:.68rem;color:var(--t2);line-height:1.5;margin-bottom:.38rem;}
+.dchips{display:flex;gap:.26rem;flex-wrap:wrap;}
+.dchip{font-size:.58rem;padding:.12rem .42rem;border-radius:4px;background:#d4eedd;border:1px solid #b8dfc8;color:var(--t2);}
+.alt-row{background:#e8f5ee;border:1px solid var(--bdr);border-radius:var(--rr);padding:.65rem .82rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem;transition:.12s;}
+.alt-row:hover{border-color:rgba(34,197,94,.3);}
+.alt-n{font-size:.76rem;font-weight:600;color:var(--t);}
+.alt-d{font-size:.65rem;color:var(--t3);margin-top:.06rem;}
+.alt-s{font-size:.68rem;font-weight:700;color:var(--g);flex-shrink:0;}
+
+/* COMPARE */
+.cmp-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:.36rem;margin-bottom:1.1rem;}
+.cpill{padding:.38rem .68rem;border-radius:7px;border:1px solid var(--bdr);background:#f4fbf7;font-family:'Inter',sans-serif;font-size:.73rem;font-weight:500;color:var(--t3);cursor:pointer;transition:.12s;text-align:left;}
+.cpill:hover{border-color:rgba(34,197,94,.35);color:var(--t);}
+.cpill.on{border-color:var(--g);color:var(--g);background:var(--gbg);font-weight:600;}
+.ctbl-w{overflow-x:auto;}
+.ctbl{width:100%;border-collapse:collapse;}
+.ctbl th{padding:.65rem .9rem;background:#e8f5ee;font-size:.62rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--bdr);text-align:left;}
+.ctbl th.pc{color:var(--g);}
+.ctbl td{padding:.65rem .9rem;font-size:.77rem;border-bottom:1px solid var(--bdr2);color:var(--t);vertical-align:middle;}
+.ctbl tr:last-child td{border-bottom:none;}
+.ctbl tr:hover td{background:rgba(255,255,255,.015);}
+.mlbl{font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);}
+.best{background:var(--gbg);color:var(--g);font-size:.58rem;font-weight:700;padding:.09rem .36rem;border-radius:4px;margin-left:.26rem;border:1px solid var(--gbdr);}
+
+/* INSIGHTS */
+.ins-ctrl{background:#ffffff;border:1px solid var(--bdr);border-radius:var(--rl);padding:.85rem 1.05rem;display:flex;gap:1.1rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-start;}
+.icg{display:flex;flex-direction:column;gap:.3rem;}
+.icg-l{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--t3);}
+.icg-p{display:flex;gap:.26rem;flex-wrap:wrap;}
+.ip{padding:.22rem .58rem;border-radius:20px;font-family:'Inter',sans-serif;font-size:.64rem;font-weight:600;border:1px solid var(--bdr);background:transparent;color:var(--t3);cursor:pointer;transition:.12s;}
+.ip:hover,.ip.on{border-color:var(--g);color:var(--g);background:var(--gbg);}
+.ct-row{display:flex;gap:.26rem;}
+.ctb{width:26px;height:26px;border-radius:6px;border:1px solid var(--bdr);background:transparent;cursor:pointer;display:grid;place-items:center;font-size:.78rem;color:var(--t3);transition:.12s;}
+.ctb:hover,.ctb.on{border-color:var(--g);background:var(--gbg);}
+.chart-card{background:#ffffff;border:1px solid var(--bdr);border-radius:var(--rl);padding:1.05rem;margin-bottom:.85rem;}
+.cc-t{font-size:.8rem;font-weight:700;color:var(--t);margin-bottom:.16rem;}
+.cc-s{font-size:.65rem;color:var(--t3);margin-bottom:.95rem;}
+
+/* ABOUT */
+.about-hero{background:var(--card);border:1px solid var(--bdr);border-radius:var(--rl);padding:1.6rem;margin-bottom:1rem;display:flex;gap:1.5rem;align-items:center;}
+.ah-ico{width:66px;height:66px;border-radius:15px;background:var(--gbg);border:1px solid var(--gbdr);display:grid;place-items:center;font-size:2rem;flex-shrink:0;}
+.ah-h{font-size:1.3rem;font-weight:800;color:var(--t);letter-spacing:-.02em;margin-bottom:.35rem;}
+.ah-p{font-size:.75rem;color:var(--t2);line-height:1.7;}
+.about-card{background:#ffffff;border:1px solid var(--bdr);border-radius:var(--rl);padding:1.1rem;}
+.ac-ico{font-size:1.3rem;margin-bottom:.5rem;}
+.ac-t{font-size:.82rem;font-weight:700;color:var(--t);margin-bottom:.32rem;}
+.ac-p{font-size:.73rem;color:var(--t2);line-height:1.65;}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.65rem;}
+.tc{background:#e8f5ee;border:1px solid var(--bdr);border-radius:var(--rr);padding:.85rem;text-align:center;}
+.tc-av{width:38px;height:38px;border-radius:50%;background:var(--gbg);border:2px solid var(--gbdr);display:grid;place-items:center;font-size:1rem;margin:0 auto .45rem;}
+.tc-n{font-size:.75rem;font-weight:700;color:var(--t);margin-bottom:.1rem;}
+.tc-r{font-size:.62rem;color:var(--t3);}
+
+/* DOCS */
+.doc-s{margin-bottom:1.4rem;}
+.doc-st{font-size:.8rem;font-weight:700;color:var(--t);margin-bottom:.65rem;padding-bottom:.42rem;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:.38rem;}
+.dt{width:100%;border-collapse:collapse;}
+.dt th{padding:.52rem .75rem;background:#e8f5ee;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--bdr);text-align:left;}
+.dt td{padding:.58rem .75rem;font-size:.73rem;border-bottom:1px solid var(--bdr2);color:var(--t);vertical-align:top;line-height:1.5;}
+.dt tr:last-child td{border-bottom:none;}
+.tag2{display:inline-block;font-size:.58rem;font-weight:600;padding:.09rem .4rem;border-radius:4px;margin-right:.18rem;}
+.tc2{background:rgba(239,68,68,.12);color:var(--r);}
+.tw{background:rgba(59,130,246,.12);color:var(--b);}
+.te{background:rgba(249,115,22,.12);color:var(--o);}
+.tws{background:rgba(34,197,94,.12);color:var(--g);}
+.src{display:flex;align-items:flex-start;gap:.55rem;padding:.55rem;background:#e8f5ee;border:1px solid var(--bdr);border-radius:7px;margin-bottom:.35rem;}
+.src-ic{font-size:.85rem;flex-shrink:0;margin-top:.03rem;}
+.src-t{font-size:.71rem;color:var(--t2);line-height:1.5;}
+.src-t strong{color:var(--t);display:block;margin-bottom:.06rem;}
+
+@media(max-width:700px){
+  .page{padding:1rem 1.25rem;}
+  .krow{grid-template-columns:1fr 1fr;}.g2{grid-template-columns:1fr;}.g4{grid-template-columns:repeat(2,1fr);}.about-hero{flex-direction:column;}.nb-top{padding:.6rem 1rem;}.nb-links{padding:.25rem 1rem;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="navbar">
+  <div class="nb-top">
+    <div class="logo" onclick="go('dashboard')">
+      <div class="logo-box">&#127807;</div>
+      <div class="logo-txt">Green<b>Trace</b></div>
+    </div>
+    <div class="nb-right">
+      <div class="live-ind"><div class="live-dot"></div> Live</div>
+      <div class="tb-tag">BCA Internship 2025 · India</div>
+    </div>
+  </div>
+  <div class="nb-links">
+    <button class="nl on" id="sl-dashboard" onclick="go('dashboard')"><span class="ic">&#128202;</span> Dashboard</button>
+    <button class="nl" id="sl-products"  onclick="go('products')"><span class="ic">&#128717;</span> Products <span class="nbadge">20</span></button>
+    <button class="nl" id="sl-compare"   onclick="go('compare')"><span class="ic">&#9878;</span> Compare</button>
+    <button class="nl" id="sl-insights"  onclick="go('insights')"><span class="ic">&#128200;</span> Insights</button>
+    <button class="nl" id="sl-about"     onclick="go('about')"><span class="ic">&#128214;</span> About</button>
+  </div>
+</nav>
+
+<div class="main-wrap">
+  <div class="breadbar">
+    <div class="bc" id="tbcr">GreenTrace <em>&rsaquo; Dashboard</em></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="pg-dashboard" class="page on">
+    <div class="ph"><h1>GreenTrace — Indian College Student Carbon Tracker</h1><p>Tracing the environmental footprint of 20 everyday Indian products across 5 life cycle stages.</p></div>
+    <div class="krow">
+      <div class="kpi"><div class="kpi-ico">&#128230;</div><div class="kv g">20</div><div class="kl">Products Analyzed</div><div class="ks">5 categories</div></div>
+      <div class="kpi"><div class="kpi-ico">&#128168;</div><div class="kv r">95</div><div class="kl">Highest Impact Score</div><div class="ks">Smartphone</div></div>
+      <div class="kpi"><div class="kpi-ico">&#128167;</div><div class="kv o">12.5k L</div><div class="kl">Max Water Usage</div><div class="ks">Per mobile phone</div></div>
+      <div class="kpi"><div class="kpi-ico">&#9851;</div><div class="kv b">90%</div><div class="kl">Max CO&#178; Saving</div><div class="ks">Reusable vs plastic bottle</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-t">Life Cycle Stages</div><div class="card-hd-s">Every product tracked across all 5 stages</div></div>
+      <div class="card-bd">
+        <div class="sf">
+          <div class="sst"><div class="sst-ic">&#9935;</div><div class="sst-n">Raw<br>Materials</div></div>
+          <div class="sst"><div class="sst-ic">&#127981;</div><div class="sst-n">Manu-<br>facturing</div></div>
+          <div class="sst"><div class="sst-ic">&#128666;</div><div class="sst-n">Distri-<br>bution</div></div>
+          <div class="sst"><div class="sst-ic">&#128268;</div><div class="sst-n">Use</div></div>
+          <div class="sst"><div class="sst-ic">&#9851;</div><div class="sst-n">Disposal</div></div>
+        </div>
+        <div class="g4">
+          <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;padding:.55rem;text-align:center;"><div style="font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.18rem;">Metric 1</div><div style="font-size:.72rem;font-weight:600;color:var(--r);">CO&#178; Emissions</div></div>
+          <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;padding:.55rem;text-align:center;"><div style="font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.18rem;">Metric 2</div><div style="font-size:.72rem;font-weight:600;color:var(--b);">Water Usage</div></div>
+          <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;padding:.55rem;text-align:center;"><div style="font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.18rem;">Metric 3</div><div style="font-size:.72rem;font-weight:600;color:var(--o);">Energy Use</div></div>
+          <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:7px;padding:.55rem;text-align:center;"><div style="font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.18rem;">Metric 4</div><div style="font-size:.72rem;font-weight:600;color:var(--g);">Waste Generated</div></div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- PRODUCTS -->
+  <div id="pg-products" class="page">
+    <div class="ph"><h1>Product Explorer</h1><p>Click any product to see its full life cycle breakdown, Indian context data and local eco-friendly alternatives.</p></div>
+    <div class="ctrls">
+      <div class="sbox"><span style="color:var(--t3);font-size:.8rem;">&#128269;</span><input type="text" id="srch" placeholder="Search products..." oninput="renderGrid()"></div>
+      <div class="fpills">
+        <button class="fp on" onclick="setF('all',this)">All</button>
+        <button class="fp" onclick="setF('Packaging',this)">Packaging</button>
+        <button class="fp" onclick="setF('Electronics',this)">Electronics</button>
+        <button class="fp" onclick="setF('Personal Care',this)">Personal Care</button>
+        <button class="fp" onclick="setF('Food',this)">Food</button>
+        <button class="fp" onclick="setF('Household',this)">Household</button>
+        <button class="fp" onclick="setF('Stationery',this)">Stationery</button>
+        <button class="fp" onclick="setF('Clothing',this)">Clothing</button>
+      </div>
+    </div>
+    <div class="pgrid" id="prodGrid"></div>
+  </div>
+
+  <!-- COMPARE -->
+  <div id="pg-compare" class="page">
+    <div class="ph"><h1>Product Comparison</h1><p>Select up to 4 products. Best (lowest impact) value highlighted in each row.</p></div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-t">Select Products to Compare</div></div>
+      <div class="card-bd"><div class="cmp-pick" id="cmpGrid"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-t">Comparison Table</div></div>
+      <div class="ctbl-w"><table class="ctbl" id="cmpTbl"></table></div>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div id="pg-insights" class="page">
+    <div class="ph"><h1>Data Insights</h1><p>Filter by metric and product, switch chart types. All products shown by default.</p></div>
+    <div class="krow" style="margin-bottom:1rem;">
+      <div class="kpi"><div class="kv g" style="font-size:1.4rem;">90%</div><div class="kl">CO&#178; Saving</div><div class="ks">Reusable vs plastic bottle</div></div>
+      <div class="kpi"><div class="kv o" style="font-size:1.4rem;">52%</div><div class="kl">Consumers Unaware</div><div class="ks">Of full life cycle impacts</div></div>
+      <div class="kpi"><div class="kv r" style="font-size:1.4rem;">95</div><div class="kl">Highest Score</div><div class="ks">Mobile phone</div></div>
+      <div class="kpi"><div class="kv b" style="font-size:1.4rem;">92%</div><div class="kl">Recyclable</div><div class="ks">Aluminum cans</div></div>
+    </div>
+    <div class="ins-ctrl">
+      <div class="icg"><div class="icg-l">Metric</div><div class="icg-p">
+        <button class="ip on" onclick="setM('score',this)">Impact Score</button>
+        <button class="ip" onclick="setM('co2',this)">CO&#178;</button>
+        <button class="ip" onclick="setM('water',this)">Water</button>
+        <button class="ip" onclick="setM('energy',this)">Energy</button>
+        <button class="ip" onclick="setM('waste',this)">Waste</button>
+      </div></div>
+      <div class="icg"><div class="icg-l">Products</div><div class="icg-p" id="prodPills"></div></div>
+      <div class="icg" style="margin-left:auto;"><div class="icg-l">Chart Type</div><div class="ct-row">
+        <button class="ctb on" onclick="setCT('bar',this)" title="Bar">&#9644;</button>
+        <button class="ctb" onclick="setCT('line',this)" title="Line">&#128200;</button>
+        <button class="ctb" onclick="setCT('pie',this)" title="Pie">&#127803;</button>
+        <button class="ctb" onclick="setCT('doughnut',this)" title="Donut">&#11093;</button>
+      </div></div>
+    </div>
+    <div class="chart-card"><div class="cc-t" id="insTitle">Impact Score &#8212; All Products</div><div class="cc-s" id="insSub">Higher score = greater environmental impact</div><canvas id="insChart" style="max-height:290px;"></canvas></div>
+    <div class="g2">
+      <div class="chart-card"><div class="cc-t">Recyclability Index</div><div class="cc-s">% recyclable at end of life</div><canvas id="recChart" style="max-height:250px;"></canvas></div>
+      <div class="chart-card"><div class="cc-t">CO&#178; Saved by Eco Alternatives</div><div class="cc-s">Estimated % CO&#178; reduction by switching</div><canvas id="altChart" style="max-height:250px;"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div id="pg-about" class="page">
+    <div class="about-hero">
+      <div class="ah-ico">&#127807;</div>
+      <div><div class="ah-h">About GreenTrace</div><p class="ah-p">GreenTrace is a Multi-Product Life Cycle Analysis and Environmental Dashboard built as a BCA Internship Project. It visualizes the hidden environmental costs of 10 everyday consumer products across five life cycle stages, measuring CO&#178; emissions, water usage, energy consumption, and waste generation for each product.</p></div>
+    </div>
+    <div class="g2" style="margin-bottom:.9rem;">
+      <div class="about-card"><div class="ac-ico">&#127919;</div><div class="ac-t">Project Objective</div><div class="ac-p">Build an interactive tool specifically for Indian college students to understand the environmental footprint of products they use daily, and guide them toward local eco-friendly alternatives.</div></div>
+      <div class="about-card"><div class="ac-ico">&#128300;</div><div class="ac-t">Methodology</div><div class="ac-p">Data collected from environmental research reports, LCA studies, academic sources, and a Google Forms survey. Each product scored 0&#8211;100 based on aggregated environmental impact across all five life cycle stages.</div></div>
+      <div class="about-card"><div class="ac-ico">&#128101;</div><div class="ac-t">Stakeholders</div><div class="ac-p">Indian college students provided usage data specific to their daily lives. Faculty mentor guided methodology. Community members from Bengaluru contributed survey responses. 42 people tested the GreenTrace prototype across two survey rounds.</div></div>
+      <div class="about-card"><div class="ac-ico">&#128202;</div><div class="ac-t">Key Findings</div><div class="ac-p">Mobile phones have the highest impact score (95/100). 52% of Indian student respondents were unaware of life cycle impacts. 81% were interested in local eco-friendly alternatives. Single-use plastic packaging is the biggest waste contributor.</div></div>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128203; Survey Results (Google Forms)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.65rem;">
+        <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rr);padding:.85rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:var(--r);line-height:1;margin-bottom:.18rem;">68%</div><div style="font-size:.68rem;color:var(--t2);">Use plastic packaging daily</div></div>
+        <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rr);padding:.85rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:var(--o);line-height:1;margin-bottom:.18rem;">75%</div><div style="font-size:.68rem;color:var(--t2);">Prioritise price over sustainability</div></div>
+        <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rr);padding:.85rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:var(--y);line-height:1;margin-bottom:.18rem;">52%</div><div style="font-size:.68rem;color:var(--t2);">Unaware of life cycle impacts</div></div>
+        <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rr);padding:.85rem;text-align:center;"><div style="font-size:1.6rem;font-weight:800;color:var(--g);line-height:1;margin-bottom:.18rem;">81%</div><div style="font-size:.68rem;color:var(--t2);">Interested in eco alternatives</div></div>
+      </div>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128105;&#8205;&#128187; Project Team</div>
+      <div class="team-grid">
+        <div class="tc"><div class="tc-av">&#128105;</div><div class="tc-n">Prakruthi BR</div><div class="tc-r">Research &amp; Data Collection</div></div>
+        <div class="tc"><div class="tc-av">&#128105;</div><div class="tc-n">Keerthi N</div><div class="tc-r">Dashboard Development</div></div>
+        <div class="tc"><div class="tc-av">&#128105;</div><div class="tc-n">Pragathi BR</div><div class="tc-r">Life Cycle Analysis</div></div>
+        <div class="tc"><div class="tc-av">&#128105;</div><div class="tc-n">Bhumika R</div><div class="tc-r">Presentation &amp; Insights</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCS -->
+  <div id="pg-docs" class="page">
+    <div class="ph"><h1>Documentation</h1><p>Scoring system, metrics, life cycle stages, data sources, and full product reference table.</p></div>
+    <div class="doc-s">
+      <div class="doc-st">&#128208; Impact Scoring System</div>
+      <table class="dt">
+        <thead><tr><th>Level</th><th>Score Range</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ib ih">High Impact</span></td><td>70 &#8211; 100</td><td>Severe environmental damage across multiple stages. Alternatives strongly recommended.</td></tr>
+          <tr><td><span class="ib im">Medium Impact</span></td><td>50 &#8211; 69</td><td>Moderate impact. Switching to alternatives provides meaningful benefit.</td></tr>
+          <tr><td><span class="ib il">Low Impact</span></td><td>35 &#8211; 49</td><td>Below-average impact. Still has room for improvement, particularly at disposal.</td></tr>
+          <tr><td><span class="ib ivl">Very Low</span></td><td>0 &#8211; 34</td><td>Minimal environmental impact. Good recyclability and low emissions across most stages.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128207; Metrics Tracked</div>
+      <table class="dt">
+        <thead><tr><th>Metric</th><th>Unit</th><th>What It Measures</th><th>Why It Matters</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag2 tc2">CO&#178;</span> Carbon Emissions</td><td>kg CO&#178;e</td><td>Total greenhouse gases emitted across the full life cycle</td><td>Direct driver of climate change</td></tr>
+          <tr><td><span class="tag2 tw">Water</span> Water Usage</td><td>Litres</td><td>Total fresh water consumed across all stages</td><td>Fresh water scarcity is a growing crisis</td></tr>
+          <tr><td><span class="tag2 te">Energy</span> Energy Use</td><td>kWh</td><td>Total energy used from extraction through disposal</td><td>Reflects fossil fuel dependency</td></tr>
+          <tr><td><span class="tag2 tws">Waste</span> Waste Generated</td><td>kg</td><td>Solid waste produced across the full life cycle</td><td>Landfill pressure and microplastics</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128260; Life Cycle Stages</div>
+      <table class="dt">
+        <thead><tr><th>Stage</th><th>Description</th><th>Typical Share</th></tr></thead>
+        <tbody>
+          <tr><td><strong>&#9935; Raw Materials</strong></td><td>Extraction and processing — mining, agriculture, petroleum refining, forestry</td><td>30&#8211;45%</td></tr>
+          <tr><td><strong>&#127981; Manufacturing</strong></td><td>Transformation into finished products — assembly, chemical processing, packaging</td><td>25&#8211;50%</td></tr>
+          <tr><td><strong>&#128666; Distribution</strong></td><td>Transport from factory to consumer — shipping, trucking, refrigeration</td><td>5&#8211;15%</td></tr>
+          <tr><td><strong>&#128268; Use</strong></td><td>Impact during active product life — electricity, water, consumables</td><td>5&#8211;20%</td></tr>
+          <tr><td><strong>&#9851; Disposal</strong></td><td>End-of-life treatment — landfill, recycling, incineration, composting</td><td>3&#8211;10%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128218; Data Sources</div>
+      <div class="src"><div class="src-ic">&#128203;</div><div class="src-t"><strong>Google Forms Survey (Primary)</strong>Survey data from students and community members on product usage and environmental awareness. Used to validate product selection and assess consumer behaviour.</div></div>
+      <div class="src"><div class="src-ic">&#127760;</div><div class="src-t"><strong>Online Environmental Research Reports</strong>Peer-reviewed LCA studies, sustainability reports from environmental organisations, and academic sources on product environmental footprints.</div></div>
+      <div class="src"><div class="src-ic">&#128202;</div><div class="src-t"><strong>Kaggle &#8212; Global Plastic Waste 2023</strong>Country-wise analysis used to contextualise packaging impact data and validate waste generation figures.</div></div>
+      <div class="src"><div class="src-ic">&#127963;</div><div class="src-t"><strong>Environmental Organisations and Academic Sources</strong>Data from environmental NGOs, university LCA databases, and product sustainability disclosures from manufacturers.</div></div>
+    </div>
+    <div class="doc-s">
+      <div class="doc-st">&#128230; Products Reference Table</div>
+      <table class="dt">
+        <thead><tr><th>Product</th><th>Category</th><th>Score</th><th>Level</th><th>Primary Issue</th></tr></thead>
+        <tbody id="docsTbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="ft-brand">
+      <div class="ft-logo">Green<b>Trace</b></div>
+      <p>Tracing the carbon footprint of everyday Indian products used by college students — helping you make smarter, greener choices.</p>
+    </div>
+    <div>
+      <div class="ft-col-ttl">Navigate</div>
+      <div class="ft-links-list">
+        <a onclick="go('dashboard')">Dashboard</a>
+        <a onclick="go('products')">Explore Products</a>
+        <a onclick="go('compare')">Compare</a>
+        <a onclick="go('insights')">Insights</a>
+        <a onclick="go('about')">About</a>
+      </div>
+    </div>
+    <div>
+      <div class="ft-col-ttl">Team</div>
+      <div class="ft-team-list">
+        <div class="ft-member">Prakruthi BR</div>
+        <div class="ft-member">Keerthi N</div>
+        <div class="ft-member">Pragathi BR</div>
+        <div class="ft-member">Bhumika R</div>
+      </div>
+    </div>
+    <div class="ft-copy">GreenTrace &mdash; Tracing India's Product Carbon Footprint &middot; BCA Internship 2025</div>
+  </footer>
+</div>
+
+<!-- DRAWER -->
+<div class="ovl" id="ovl" onclick="cd(event)">
+  <div class="drawer">
+    <div class="dr-hd">
+      <div>
+        <div class="dr-em" id="d-em"></div>
+        <div class="dr-name" id="d-nm"></div>
+        <div class="dr-meta"><span class="dr-cat" id="d-cat"></span><span class="ib" id="d-badge"></span></div>
+      </div>
+      <button class="dr-x" onclick="document.getElementById('ovl').classList.remove('on')">&#x2715;</button>
+    </div>
+    <div class="dr-body" id="d-body"></div>
+  </div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+var P=[
+  {id:1,e:"📱",n:"Smartphone",cat:"Electronics",s:95,lv:"h",co2:70,w:12500,en:980,ws:82,rc:18,as:70,issue:"E-waste and rare earth mining",
+   st:[{i:"⛏️",n:"Raw Materials",c:"28 kg",w:"6,200 L",e:"380 kWh",ws:"12 kg",t:"Mining cobalt and lithium in Congo and Chile causes severe land degradation. India imports 100% of these minerals."},{i:"🏭",n:"Manufacturing",c:"29 kg",w:"5,100 L",e:"520 kWh",ws:"45 kg",t:"Assembled mostly in China; PCB production generates toxic chemical waste streams."},{i:"🚢",n:"Distribution",c:"4.9 kg",w:"120 L",e:"34 kWh",ws:"1.2 kg",t:"Shipped from China to India; air freight adds disproportionate emissions."},{i:"🔌",n:"Use",c:"6.3 kg",w:"80 L",e:"38 kWh",ws:"0 kg",t:"Average Indian college student charges phone 1–2 times daily for 2–3 years."},{i:"♻️",n:"Disposal",c:"1.8 kg",w:"1,000 L",e:"8 kWh",ws:"24 kg",t:"India generates 3.2 million tonnes of e-waste yearly. Only 22% is formally recycled."}],
+   al:[{n:"Refurbished Phone (Cashify, OLX)",d:"Buy certified refurbished — saves 70% manufacturing emissions",s:"↓ 70% CO₂"},{n:"Extend Device Life +1 Year",d:"The single most impactful action any student can take",s:"↓ 30% impact"},{n:"Exchange/Trade-In Programs",d:"Samsung, Apple India trade-in ensures safe recycling",s:"↓ 18% waste"}]},
+  {id:2,e:"🧴",n:"Plastic Water Bottle (500ml)",cat:"Packaging",s:85,lv:"h",co2:6.5,w:8400,en:96,ws:0.05,rc:35,as:90,issue:"Single-use plastic flooding Indian streets and drains",
+   st:[{i:"🛢️",n:"Raw Materials",c:"2.1 kg",w:"4,800 L",e:"38 kWh",ws:"0 kg",t:"PET plastic from crude oil; India imports petroleum and refines it, releasing VOCs at refineries."},{i:"🏭",n:"Manufacturing",c:"2.8 kg",w:"2,900 L",e:"44 kWh",ws:"0.02 kg",t:"Injection moulding; major plastic bottle factories in Gujarat and Maharashtra."},{i:"🚚",n:"Distribution",c:"0.9 kg",w:"80 L",e:"8 kWh",ws:"0 kg",t:"Distributed across India via road transport; common in college canteens and shops."},{i:"🚰",n:"Use",c:"0.3 kg",w:"200 L",e:"2 kWh",ws:"0 kg",t:"Average lifespan: 20 minutes. India produces 9.46 million tonnes of plastic waste yearly."},{i:"🗑️",n:"Disposal",c:"0.4 kg",w:"420 L",e:"4 kWh",ws:"0.03 kg",t:"Most end up in Indian drains, rivers or landfills. Plastic clogs drainage in cities like Bengaluru."}],
+   al:[{n:"Steel/Copper Water Bottle",d:"Traditional Indian option — lasts years, zero waste",s:"↓ 90% lifetime"},{n:"Milton/Cello Reusable Bottle",d:"Available in every Indian store under ₹200",s:"↓ 85% plastic"},{n:"College RO Water + Reusable Bottle",d:"Use campus filtered water — zero packaging",s:"↓ 100% bottles"}]},
+  {id:3,e:"☕",n:"Plastic Tea/Coffee Cup",cat:"Packaging",s:72,lv:"h",co2:0.11,w:140,en:8,ws:0.012,rc:8,as:84,issue:"Non-recyclable cups at every college canteen",
+   st:[{i:"🌲",n:"Raw Materials",c:"0.03 kg",w:"60 L",e:"2.5 kWh",ws:"0 kg",t:"Thin plastic cups made from polystyrene — a petroleum derivative."},{i:"🏭",n:"Manufacturing",c:"0.04 kg",w:"55 L",e:"3.2 kWh",ws:"0.005 kg",t:"Thermoforming process; major cup manufacturers in Delhi and Mumbai supply college canteens."},{i:"🚚",n:"Distribution",c:"0.01 kg",w:"8 L",e:"0.6 kWh",ws:"0 kg",t:"Flat-packed, cheap to transport; distributed in bulk to college canteens."},{i:"☕",n:"Use",c:"0.01 kg",w:"5 L",e:"0.5 kWh",ws:"0 kg",t:"Average use time: 5 minutes. Indian college students use 2–4 cups daily from canteen."},{i:"🗑️",n:"Disposal",c:"0.02 kg",w:"12 L",e:"1.2 kWh",ws:"0.007 kg",t:"Thrown in dustbins or open areas; polystyrene does not biodegrade for hundreds of years."}],
+   al:[{n:"Personal Steel Tumbler",d:"Carry your own — many canteens offer discount",s:"↓ 84% per year"},{n:"Clay Kulhad / Earthen Cup",d:"Traditional Indian biodegradable option",s:"↓ 100% plastic"},{n:"Paper Cup (FSC certified)",d:"Better than plastic — recyclable if not laminated",s:"↓ 40% waste"}]},
+  {id:4,e:"🛍️",n:"Plastic Carry Bag",cat:"Packaging",s:68,lv:"m",co2:0.03,w:82,en:1.2,ws:0.008,rc:10,as:85,issue:"Banned in India but still widely used on campuses",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.01 kg",w:"35 L",e:"0.5 kWh",ws:"0 kg",t:"Low-density polyethylene (LDPE) from petroleum; India still produces billions despite ban."},{i:"🏭",n:"Manufacturing",c:"0.01 kg",w:"30 L",e:"0.5 kWh",ws:"0.003 kg",t:"Extrusion process; plastic bag manufacturers still operating illegally in many Indian states."},{i:"🚚",n:"Distribution",c:"0.003 kg",w:"5 L",e:"0.1 kWh",ws:"0 kg",t:"Distributed free at shops, markets and college stationery stores."},{i:"🛒",n:"Use",c:"0.002 kg",w:"2 L",e:"0.05 kWh",ws:"0 kg",t:"Average use: 12 minutes. India banned single-use plastic bags above 75 microns in 2022."},{i:"🌊",n:"Disposal",c:"0.015 kg",w:"10 L",e:"0.05 kWh",ws:"0.005 kg",t:"Clogs Indian drains causing urban flooding. Found in Yamuna, Ganga and coastal waters."}],
+   al:[{n:"Jute Bag (₹30–₹80)",d:"Made in India, biodegradable, very strong",s:"↓ 80% lifetime"},{n:"Cotton Tote Bag",d:"Available at most Indian campus stores",s:"↓ 71% per use"},{n:"Cloth Thela Bag",d:"Traditional Indian reusable bag — completely free if you have old cloth",s:"↓ 100%"}]},
+  {id:5,e:"📓",n:"Plastic-Covered Notebook",cat:"Stationery",s:62,lv:"m",co2:1.1,w:2200,en:18,ws:0.25,rc:40,as:55,issue:"Plastic cover adds non-recyclable waste",
+   st:[{i:"🌲",n:"Raw Materials",c:"0.4 kg",w:"1,600 L",e:"7 kWh",ws:"0 kg",t:"Paper from wood pulp; India imports significant amounts of wood pulp from Brazil and Canada."},{i:"🏭",n:"Manufacturing",c:"0.45 kg",w:"500 L",e:"9 kWh",ws:"0.2 kg",t:"Paper mills in Andhra Pradesh and Maharashtra; plastic laminate cover adds non-recyclable layer."},{i:"🚚",n:"Distribution",c:"0.12 kg",w:"40 L",e:"1.2 kWh",ws:"0 kg",t:"Supplied to college bookshops and stationery stores; usually over-packaged in plastic."},{i:"✏️",n:"Use",c:"0.08 kg",w:"30 L",e:"0.5 kWh",ws:"0 kg",t:"Used for 1 semester; most Indian students buy 8–10 notebooks per year."},{i:"♻️",n:"Disposal",c:"0.05 kg",w:"30 L",e:"0.3 kWh",ws:"0.05 kg",t:"Paper is recyclable (raddi/kabadiwala) but plastic cover must be removed first."}],
+   al:[{n:"Recycled Paper Notebook (Classmate Eco)",d:"ITC Classmate has recycled paper range",s:"↓ 45% trees"},{n:"Sell to Raddi/Kabadiwala",d:"Indian paper recycling system — very accessible",s:"↓ 80% waste"},{n:"Digital Notes (OneNote/Notion)",d:"Use laptop or phone for notes — zero paper",s:"↓ 100% paper"}]},
+  {id:6,e:"🧴",n:"Shampoo Sachet",cat:"Personal Care",s:60,lv:"m",co2:0.15,w:280,en:5,ws:0.008,rc:5,as:65,issue:"India produces 8 billion sachets yearly — none recyclable",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.05 kg",w:"130 L",e:"2 kWh",ws:"0 kg",t:"Multi-layer plastic sachet from LDPE and aluminium foil; surfactants from petrochemicals."},{i:"🏭",n:"Manufacturing",c:"0.06 kg",w:"110 L",e:"2.2 kWh",ws:"0.005 kg",t:"Sachet filling lines; HUL, P&G, Marico are major producers in India."},{i:"🚚",n:"Distribution",c:"0.02 kg",w:"15 L",e:"0.4 kWh",ws:"0 kg",t:"Sold at every kirana store and college hostel canteen; extremely cheap and accessible."},{i:"🚿",n:"Use",c:"0.01 kg",w:"15 L",e:"0.2 kWh",ws:"0 kg",t:"Single use; popular in Indian college hostels where students buy daily."},{i:"🗑️",n:"Disposal",c:"0.01 kg",w:"10 L",e:"0.2 kWh",ws:"0.003 kg",t:"Multi-layer sachets are completely non-recyclable. India's biggest plastic waste contributor by count."}],
+   al:[{n:"Shampoo Bar (Khadi, Biotique)",d:"Indian brands offering zero-packaging options",s:"↓ 70% packaging"},{n:"Large Bottle (share in hostel)",d:"Buy 1 large bottle — share with roommates",s:"↓ 90% sachets"},{n:"Khadi Herbal Shampoo (bottle)",d:"Indian brand, natural, minimal packaging",s:"↓ 60% chemicals"}]},
+  {id:7,e:"🍱",n:"Plastic Food Container",cat:"Packaging",s:58,lv:"m",co2:0.9,w:1200,en:28,ws:0.04,rc:40,as:68,issue:"BPA leaching into hot Indian food",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.35 kg",w:"650 L",e:"12 kWh",ws:"0 kg",t:"Polypropylene from petroleum; some contain BPA which leaches into food especially when heated."},{i:"🏭",n:"Manufacturing",c:"0.35 kg",w:"480 L",e:"13 kWh",ws:"0.02 kg",t:"Injection moulding; Lock&Lock, Tupperware and local brands widely sold in India."},{i:"🚚",n:"Distribution",c:"0.1 kg",w:"30 L",e:"1.5 kWh",ws:"0 kg",t:"Sold at every Indian home store, supermarket and online; very affordable."},{i:"🍱",n:"Use",c:"0.08 kg",w:"20 L",e:"1.2 kWh",ws:"0 kg",t:"Repeated microwaving of plastic containers in Indian hostels causes BPA leaching into food."},{i:"🗑️",n:"Disposal",c:"0.02 kg",w:"20 L",e:"0.3 kWh",ws:"0.02 kg",t:"Many Indian plastic containers are not accepted in kerbside recycling."}],
+   al:[{n:"Stainless Steel Tiffin (Indian dabba)",d:"Traditional Indian option — lasts decades, BPA-free",s:"↓ 80% plastic"},{n:"Kamboo/Bamboo Container",d:"Biodegradable, increasingly available in India",s:"↓ 70% lifetime"},{n:"Glass Container",d:"Reuse old pickle/jam jars — free and safe",s:"↓ 100% plastic"}]},
+  {id:8,e:"🧴",n:"Fairness/Face Cream Tube",cat:"Personal Care",s:55,lv:"m",co2:0.22,w:320,en:7,ws:0.018,rc:25,as:55,issue:"Mixed plastic tube not recyclable in India",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.08 kg",w:"150 L",e:"3 kWh",ws:"0 kg",t:"Aluminium-plastic laminate tube; chemical ingredients like parabens and synthetic fragrances."},{i:"🏭",n:"Manufacturing",c:"0.09 kg",w:"130 L",e:"3.2 kWh",ws:"0.01 kg",t:"HUL, L'Oreal, Nivea India manufacture millions of face cream tubes yearly."},{i:"🚚",n:"Distribution",c:"0.03 kg",w:"20 L",e:"0.6 kWh",ws:"0 kg",t:"Available everywhere in India — kirana stores, pharmacies, supermarkets."},{i:"💆",n:"Use",c:"0.01 kg",w:"10 L",e:"0.1 kWh",ws:"0 kg",t:"Used daily by Indian college students; average 1 tube per month."},{i:"🗑️",n:"Disposal",c:"0.01 kg",w:"10 L",e:"0.1 kWh",ws:"0.008 kg",t:"Laminate tube rejected by Indian recycling systems — goes to landfill."}],
+   al:[{n:"Multani Mitti / Besan (natural)",d:"Traditional Indian beauty ingredient — zero packaging",s:"↓ 100% tube"},{n:"Himalaya / Biotique (glass jar)",d:"Indian brands with glass or recyclable packaging",s:"↓ 55% waste"},{n:"Homemade Ubtan",d:"Traditional Indian face pack — coconut oil, turmeric, sandalwood",s:"Fully natural"}]},
+  {id:9,e:"🚿",n:"Plastic Disposable Razor",cat:"Personal Care",s:50,lv:"m",co2:0.28,w:340,en:8,ws:0.018,rc:6,as:72,issue:"2 billion razors discarded in India yearly",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.1 kg",w:"160 L",e:"3.5 kWh",ws:"0 kg",t:"Plastic handle and stainless steel blades; no single material stream for recycling."},{i:"🏭",n:"Manufacturing",c:"0.11 kg",w:"140 L",e:"3.5 kWh",ws:"0.01 kg",t:"Gillette India, BIC and local brands; chrome coating uses hexavalent chromium."},{i:"🚚",n:"Distribution",c:"0.04 kg",w:"20 L",e:"0.6 kWh",ws:"0 kg",t:"Sold at every Indian pharmacy and kirana store; extremely affordable."},{i:"🪒",n:"Use",c:"0.02 kg",w:"10 L",e:"0.2 kWh",ws:"0 kg",t:"Average 3–5 shaves per razor; Indian college students typically discard after one week."},{i:"🗑️",n:"Disposal",c:"0.01 kg",w:"10 L",e:"0.2 kWh",ws:"0.008 kg",t:"Mixed materials prevent recycling; sharp steel in general waste is hazardous."}],
+   al:[{n:"Double-Edge Safety Razor",d:"Traditional Indian barber razor — lasts years",s:"↓ 95% plastic"},{n:"Ustraa / Bombay Shaving Company",d:"Indian brands offering refillable razor systems",s:"↓ 70% waste"},{n:"Local Barber Shop",d:"Traditional Indian grooming — shared tools, zero personal waste",s:"↓ 100% razors"}]},
+  {id:10,e:"🧻",n:"Tissue Paper Pack",cat:"Household",s:45,lv:"l",co2:0.8,w:1400,en:14,ws:0.18,rc:30,as:58,issue:"Replacing traditional Indian cloth with disposable tissue",
+   st:[{i:"🌲",n:"Raw Materials",c:"0.3 kg",w:"900 L",e:"5 kWh",ws:"0 kg",t:"37 litres of water per tissue roll; virgin wood pulp imported to India."},{i:"🏭",n:"Manufacturing",c:"0.3 kg",w:"420 L",e:"7 kWh",ws:"0.15 kg",t:"Softness coating and bleaching process; major mills in Tamil Nadu and Maharashtra."},{i:"🚚",n:"Distribution",c:"0.1 kg",w:"30 L",e:"1.2 kWh",ws:"0 kg",t:"Sold at every Indian supermarket and pharmacy; increasingly popular in college hostels."},{i:"🧻",n:"Use",c:"0.05 kg",w:"20 L",e:"0.3 kWh",ws:"0 kg",t:"Single use; Indian college students increasingly replacing cloth with tissue."},{i:"🗑️",n:"Disposal",c:"0.05 kg",w:"30 L",e:"0.5 kWh",ws:"0.03 kg",t:"Wet tissue cannot be recycled; dry tissue can but rarely is in Indian households."}],
+   al:[{n:"Cotton Handkerchief (rumal)",d:"Traditional Indian option — wash and reuse forever",s:"↓ 95% tissue"},{n:"Recycled Tissue (Selpak India)",d:"Made from recycled paper — lower tree impact",s:"↓ 50% trees"},{n:"Cotton Kitchen Towels",d:"Reusable cloth towels — traditional Indian kitchen practice",s:"↓ 85% waste"}]},
+  {id:11,e:"🎧",n:"Earphones / Earbuds",cat:"Electronics",s:82,lv:"h",co2:12,w:5800,en:140,ws:1.8,rc:12,as:65,issue:"Fast-fashion electronics with 1-year lifespan",
+   st:[{i:"⛏️",n:"Raw Materials",c:"4.5 kg",w:"3,200 L",e:"60 kWh",ws:"0 kg",t:"Rare earth magnets, copper wiring and plastic housing; all imported to India."},{i:"🏭",n:"Manufacturing",c:"5.5 kg",w:"2,200 L",e:"68 kWh",ws:"1.5 kg",t:"Assembled in China; extremely small components make repair impossible."},{i:"🚢",n:"Distribution",c:"1.2 kg",w:"180 L",e:"8 kWh",ws:"0.2 kg",t:"Imported into India via ports; sold on Flipkart, Amazon India cheaply."},{i:"🎧",n:"Use",c:"0.5 kg",w:"120 L",e:"2.5 kWh",ws:"0 kg",t:"Average Indian student replaces earphones every 6–12 months."},{i:"🗑️",n:"Disposal",c:"0.3 kg",w:"100 L",e:"1.5 kWh",ws:"0.1 kg",t:"Contains toxic lead solder; added to India's growing e-waste problem."}],
+   al:[{n:"Buy Repairable Earphones",d:"Brands with detachable cables can be repaired",s:"↓ 60% waste"},{n:"Second-Hand on OLX/Quikr",d:"Buy used — saves all manufacturing emissions",s:"↓ 80% CO₂"},{n:"Over-Ear Headphones",d:"Designed to last 5–10 years vs 1 year for earbuds",s:"↓ 70% impact"}]},
+  {id:12,e:"🍜",n:"Instant Noodles Pack (Maggi)",cat:"Food",s:70,lv:"h",co2:2.8,w:4200,en:55,ws:0.06,rc:8,as:60,issue:"Multi-layer packaging is India's biggest food waste item",
+   st:[{i:"🌾",n:"Raw Materials",c:"1.2 kg",w:"2,800 L",e:"22 kWh",ws:"0 kg",t:"Wheat cultivation uses large amounts of water and fertilisers in Indian fields."},{i:"🏭",n:"Manufacturing",c:"0.9 kg",w:"1,100 L",e:"25 kWh",ws:"0.04 kg",t:"Nestlé India's Maggi factory in Nanjangud; multi-layer foil packaging is non-recyclable."},{i:"🚛",n:"Distribution",c:"0.4 kg",w:"180 L",e:"5 kWh",ws:"0 kg",t:"Distributed across India via cold chain; extremely common in college hostels."},{i:"🍜",n:"Use",c:"0.2 kg",w:"80 L",e:"2.5 kWh",ws:"0.01 kg",t:"Most popular late-night meal for Indian college students; average 3–4 packs per week."},{i:"🗑️",n:"Disposal",c:"0.1 kg",w:"40 L",e:"0.5 kg",ws:"0.01 kg",t:"Silver foil wrapper and plastic spice sachet cannot be recycled in India."}],
+   al:[{n:"Home-Cooked Poha/Upma",d:"Traditional Indian quick meal — zero packaging",s:"↓ 85% emissions"},{n:"Bulk Buying Rice/Dal",d:"Buy staples in bulk — much less packaging per meal",s:"↓ 70% packaging"},{n:"MTR/ITC Ready Meals (pouch)",d:"Slightly better packaging options available",s:"↓ 30% waste"}]},
+  {id:13,e:"🪥",n:"Plastic Toothbrush",cat:"Personal Care",s:48,lv:"l",co2:0.18,w:260,en:7,ws:0.022,rc:8,as:75,issue:"3.5 billion plastic toothbrushes discarded in India yearly",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.07 kg",w:"120 L",e:"3 kWh",ws:"0 kg",t:"Nylon bristles and polypropylene handle; both from petroleum derivatives."},{i:"🏭",n:"Manufacturing",c:"0.07 kg",w:"100 L",e:"3 kWh",ws:"0.015 kg",t:"Colgate, Oral-B India manufacture millions; handle and bristle cannot be separated."},{i:"🚚",n:"Distribution",c:"0.02 kg",w:"15 L",e:"0.5 kWh",ws:"0 kg",t:"Sold everywhere in India; typically come in unnecessary plastic packaging."},{i:"🦷",n:"Use",c:"0.01 kg",w:"10 L",e:"0.2 kWh",ws:"0 kg",t:"Dentists recommend replacing every 3 months; Indian students typically keep for 6+ months."},{i:"🗑️",n:"Disposal",c:"0.01 kg",w:"15 L",e:"0.3 kWh",ws:"0.007 kg",t:"Cannot be recycled; added to Indian plastic waste. Takes 400+ years to decompose."}],
+   al:[{n:"Bamboo Toothbrush (Bamboo India)",d:"Indian brand — handle composts in 6 months",s:"↓ 75% plastic"},{n:"Neem Datun (twig)",d:"Traditional Indian oral care — zero waste, antibacterial",s:"↓ 100% plastic"},{n:"Colgate Bamboo Toothbrush",d:"Now available in India — biodegradable handle",s:"↓ 60% plastic"}]},
+  {id:14,e:"📦",n:"Amazon/Flipkart Cardboard Box",cat:"Packaging",s:35,lv:"l",co2:0.6,w:950,en:10,ws:0.3,rc:85,as:42,issue:"India's e-commerce boom creating massive packaging waste",
+   st:[{i:"🌲",n:"Raw Materials",c:"0.22 kg",w:"550 L",e:"4.5 kWh",ws:"0 kg",t:"Corrugated cardboard from kraft pulp; India's paper industry uses 15 million tonnes of wood yearly."},{i:"🏭",n:"Manufacturing",c:"0.22 kg",w:"340 L",e:"4.5 kWh",ws:"0.25 kg",t:"Box manufacturing in Delhi, Mumbai and Bengaluru; recyclable but often mixed with tape."},{i:"🚚",n:"Distribution",c:"0.1 kg",w:"30 L",e:"0.7 kWh",ws:"0 kg",t:"Amazon India, Flipkart deliver 10+ million packages daily; excess packaging is common."},{i:"📦",n:"Use",c:"0.05 kg",w:"15 L",e:"0.2 kWh",ws:"0 kg",t:"Indian college students order heavily on Flipkart/Amazon; boxes are rarely reused."},{i:"♻️",n:"Disposal",c:"0.01 kg",w:"15 L",e:"0.1 kWh",ws:"0.05 kg",t:"Cardboard is recyclable via raddi/kabadiwala. Remove tape and plastic first."}],
+   al:[{n:"Sell to Kabadiwala",d:"Traditional Indian recycling system — earn money from cardboard",s:"↓ 85% waste"},{n:"Reuse for Storage",d:"Use as storage boxes in hostel room",s:"↓ 100% new boxes"},{n:"Choose Minimal Packaging",d:"Select eco-friendly packaging option on Flipkart/Amazon",s:"↓ 40% packaging"}]},
+  {id:15,e:"💡",n:"LED Bulb",cat:"Household",s:28,lv:"vl",co2:0.5,w:380,en:8,ws:0.06,rc:25,as:40,issue:"Good choice but improper disposal releases mercury",
+   st:[{i:"⛏️",n:"Raw Materials",c:"0.18 kg",w:"180 L",e:"3.5 kWh",ws:"0 kg",t:"Rare earth phosphors imported; aluminium heatsink locally sourced in India."},{i:"🏭",n:"Manufacturing",c:"0.18 kg",w:"160 L",e:"3.5 kWh",ws:"0.04 kg",t:"Havells, Philips India, Syska manufacture LEDs locally under Make in India."},{i:"🚚",n:"Distribution",c:"0.06 kg",w:"20 L",e:"0.6 kWh",ws:"0 kg",t:"Available everywhere in India under PM LED scheme; subsidised prices."},{i:"💡",n:"Use",c:"0.04 kg",w:"10 L",e:"0.3 kWh",ws:"0 kg",t:"LEDs use 80% less electricity than CFL; saves significant electricity bill in Indian homes."},{i:"🗑️",n:"Disposal",c:"0.02 kg",w:"10 L",e:"0.1 kWh",ws:"0.02 kg",t:"Should go to e-waste collection points; many Indian college students throw in dustbin."}],
+   al:[{n:"BEE 5-Star Rated LED",d:"Bureau of Energy Efficiency 5-star saves most electricity",s:"↓ 40% energy"},{n:"Solar Study Lamp",d:"Affordable solar lamps for students — zero electricity cost",s:"↓ 100% grid"},{n:"Motion Sensor Bulb",d:"Auto-off saves 30% energy in college rooms",s:"↓ 30% energy"}]},
+  {id:16,e:"🖊️",n:"Ball Point Pen",cat:"Stationery",s:25,lv:"vl",co2:0.04,w:85,en:1.8,ws:0.006,rc:15,as:70,issue:"440 million pens discarded in India yearly",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.015 kg",w:"40 L",e:"0.8 kWh",ws:"0 kg",t:"Polystyrene barrel and ink from petroleum derivatives; brass tip from zinc-copper alloy."},{i:"🏭",n:"Manufacturing",c:"0.015 kg",w:"35 L",e:"0.8 kWh",ws:"0.004 kg",t:"Cello, Reynolds, Linc are major Indian pen manufacturers in Maharashtra and West Bengal."},{i:"🚚",n:"Distribution",c:"0.005 kg",w:"5 L",e:"0.1 kWh",ws:"0 kg",t:"Extremely cheap (₹5–₹10); distributed to every Indian college stationery shop."},{i:"🖊️",n:"Use",c:"0.003 kg",w:"3 L",e:"0.05 kWh",ws:"0 kg",t:"Indian college student uses 30–50 pens per year on average."},{i:"🗑️",n:"Disposal",c:"0.002 kg",w:"2 L",e:"0.05 kWh",ws:"0.002 kg",t:"Plastic barrel cannot be recycled; ink cartridge is hazardous. Collected by rag pickers sometimes."}],
+   al:[{n:"Refillable Pen (Cello Refill)",d:"Buy once, just change the refill — 80% less plastic",s:"↓ 80% plastic"},{n:"Fountain Pen with Ink Bottle",d:"Traditional Indian school option — lasts years",s:"↓ 90% waste"},{n:"Recycled Plastic Pen",d:"Cello and Reynolds have eco pen ranges in India",s:"↓ 50% virgin plastic"}]},
+  {id:17,e:"🧼",n:"Liquid Soap Bottle",cat:"Personal Care",s:42,lv:"l",co2:0.35,w:480,en:10,ws:0.025,rc:55,as:62,issue:"HDPE bottle with synthetic surfactants",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.13 kg",w:"230 L",e:"4.5 kWh",ws:"0 kg",t:"HDPE plastic from petroleum; surfactants like SLS are petrochemical derivatives."},{i:"🏭",n:"Manufacturing",c:"0.14 kg",w:"210 L",e:"4.5 kWh",ws:"0.015 kg",t:"Dettol, Lifebuoy, Savlon made by Reckitt and HUL in Indian factories."},{i:"🚚",n:"Distribution",c:"0.05 kg",w:"20 L",e:"0.7 kWh",ws:"0 kg",t:"Sold everywhere in India; college hostels provide or students buy individually."},{i:"🧼",n:"Use",c:"0.02 kg",w:"10 L",e:"0.2 kWh",ws:"0 kg",t:"SLS surfactants rinse into Indian water bodies; affect aquatic life in rivers."},{i:"♻️",n:"Disposal",c:"0.01 kg",w:"10 L",e:"0.1 kWh",ws:"0.01 kg",t:"HDPE bottle is recyclable — clean and give to kabadiwala or recycling collection."}],
+   al:[{n:"Bar Soap (Khadi, Medimix)",d:"Indian brands with zero packaging — bar lasts 2x longer",s:"↓ 65% packaging"},{n:"Refill Pouch (Dettol Refill)",d:"Buy the refill pouch — 70% less plastic than new bottle",s:"↓ 70% plastic"},{n:"Neem/Turmeric Soap Bar",d:"Traditional Indian antibacterial — zero plastic",s:"Fully natural"}]},
+  {id:18,e:"🔋",n:"AA/AAA Batteries",cat:"Electronics",s:65,lv:"m",co2:2.2,w:1800,en:35,ws:0.15,rc:10,as:68,issue:"Toxic heavy metals dumped in Indian landfills",
+   st:[{i:"⛏️",n:"Raw Materials",c:"0.85 kg",w:"980 L",e:"15 kWh",ws:"0 kg",t:"Zinc, manganese dioxide and carbon from mining; lithium imported from Chile and Argentina."},{i:"🏭",n:"Manufacturing",c:"0.9 kg",w:"700 L",e:"17 kWh",ws:"0.1 kg",t:"Eveready India (oldest Indian brand), Duracell; toxic heavy metal processing."},{i:"🚚",n:"Distribution",c:"0.25 kg",w:"70 L",e:"2 kWh",ws:"0 kg",t:"Sold everywhere from kirana stores to electronics shops; cheap and widely used."},{i:"🔋",n:"Use",c:"0.15 kg",w:"30 L",e:"0.8 kWh",ws:"0 kg",t:"Used in TV remotes, clocks, calculators, toys; typically last 6–12 months."},{i:"🗑️",n:"Disposal",c:"0.05 kg",w:"20 L",e:"0.2 kWh",ws:"0.05 kg",t:"Contains mercury, cadmium and lead; dumped in Indian landfills, leaching into groundwater."}],
+   al:[{n:"Rechargeable NiMH Batteries",d:"Charge 1000+ times — 30x less waste overall",s:"↓ 90% lifetime"},{n:"USB Rechargeable Batteries",d:"Charge directly from phone charger — very convenient",s:"↓ 85% waste"},{n:"E-waste Collection (Attero India)",d:"Attero is India's largest battery recycler — free drop-off",s:"↓ 95% toxic waste"}]},
+  {id:19,e:"🛁",n:"Plastic Soap/Shampoo Cap Bottle",cat:"Personal Care",s:38,lv:"l",co2:0.45,w:520,en:12,ws:0.02,rc:60,as:58,issue:"HDPE recyclable but rarely recycled in India",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.17 kg",w:"250 L",e:"5 kWh",ws:"0 kg",t:"HDPE and PP plastic from petroleum; India's top cosmetic brands use virgin plastic."},{i:"🏭",n:"Manufacturing",c:"0.18 kg",w:"230 L",e:"5.5 kWh",ws:"0.01 kg",t:"Patanjali, Dabur, Himalaya, HUL India are top manufacturers; packaging is functional."},{i:"🚚",n:"Distribution",c:"0.06 kg",w:"20 L",e:"0.8 kWh",ws:"0 kg",t:"Available at every Indian kirana store, pharmacy and supermarket."},{i:"🛁",n:"Use",c:"0.03 kg",w:"10 L",e:"0.3 kWh",ws:"0 kg",t:"Used by Indian college students daily; typically 1–2 bottles per month."},{i:"♻️",n:"Disposal",c:"0.01 kg",w:"10 L",e:"0.4 kWh",ws:"0.01 kg",t:"HDPE bottle is recyclable — rinse clean and give to kabadiwala for recycling."}],
+   al:[{n:"Patanjali / Khadi Herbal Bar",d:"Indian brand bar soap/shampoo — zero plastic bottle",s:"↓ 80% packaging"},{n:"Refill at Store (growing trend)",d:"Some Indian organic stores now offer refill stations",s:"↓ 85% plastic"},{n:"Concentrated Formula",d:"1 bottle of concentrate replaces 3 regular bottles",s:"↓ 60% plastic"}]},
+  {id:20,e:"🌮",n:"Single-Use Thermocol Plate",cat:"Packaging",s:88,lv:"h",co2:0.18,w:420,en:9,ws:0.04,rc:0,as:90,issue:"Banned in India but still used at every college event",
+   st:[{i:"🛢️",n:"Raw Materials",c:"0.07 kg",w:"200 L",e:"4 kWh",ws:"0 kg",t:"Expanded polystyrene (EPS) from petroleum; India banned thermocol plates in 2022 under SUP rules."},{i:"🏭",n:"Manufacturing",c:"0.07 kg",w:"180 L",e:"4 kWh",ws:"0.025 kg",t:"Still manufactured illegally or legally for export; widely available despite ban."},{i:"🚚",n:"Distribution",c:"0.02 kg",w:"15 L",e:"0.4 kWh",ws:"0 kg",t:"Extremely cheap — ₹1–₹2 per plate; still used at Indian college fests, canteens and events."},{i:"🍽️",n:"Use",c:"0.01 kg",w:"5 L",e:"0.1 kWh",ws:"0 kg",t:"Average use: 15 minutes. Millions used at Indian college fests, marriages, and functions."},{i:"🗑️",n:"Disposal",c:"0.01 kg",w:"20 L",e:"0.5 kWh",ws:"0.015 kg",t:"0% recyclable. Thermocol breaks into microbeads that contaminate Indian soil and water permanently."}],
+   al:[{n:"Areca Leaf Plates (Patravali)",d:"Traditional Indian biodegradable plate — composts in 60 days",s:"↓ 100% thermocol"},{n:"Banana Leaf (South India)",d:"Traditional serving method — zero waste, natural",s:"Fully compostable"},{n:"Reusable Steel Plate",d:"Ask your college canteen to switch to steel plates",s:"↓ 100% disposables"}]}
+];
+
+var LV={h:{c:"ih",l:"High Impact"},m:{c:"im",l:"Medium Impact"},l:{c:"il",l:"Low Impact"},vl:{c:"ivl",l:"Very Low"}};
+var PAL=["#ef4444","#f97316","#eab308","#22c55e","#3b82f6","#a855f7","#ec4899","#14b8a6","#f59e0b","#84cc16"];
+var MM={score:{l:"Impact Score",u:"/100",s:"Higher score = greater environmental impact (0-100)",dk:"s"},co2:{l:"CO2 Emissions",u:"kg",s:"Total CO2 across all life cycle stages",dk:"co2"},water:{l:"Water Usage",u:"L",s:"Total water consumed",dk:"w"},energy:{l:"Energy Use",u:"kWh",s:"Total energy consumed",dk:"en"},waste:{l:"Waste Generated",u:"kg",s:"Total waste produced",dk:"ws"}};
+var aF="all",cmpList=[],insMetric="score",insType="bar",aProd=new Set(P.map(function(p){return p.id;}));
+var dCI=null,iCI=null,rCI=null,aCI=null;
+
+function ib(lv){var x=LV[lv]||LV.vl;return '<span class="ib '+x.c+'">'+x.l+'</span>';}
+function sc(s){return s>=70?"rgba(239,68,68,.8)":s>=50?"rgba(249,115,22,.8)":s>=35?"rgba(234,179,8,.75)":"rgba(34,197,94,.75)";}
+
+var CRUMBS={dashboard:"Dashboard",products:"Products",compare:"Compare",insights:"Insights",about:"About",docs:"Documentation"};
+function go(id){
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("on");});
+  document.querySelectorAll(".nl").forEach(function(b){b.classList.remove("on");});
+  document.getElementById("pg-"+id).classList.add("on");
+  var s=document.getElementById("sl-"+id);if(s)s.classList.add("on");
+  document.getElementById("tbcr").innerHTML="GreenTrace <em>&rsaquo; "+CRUMBS[id]+"</em>";
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(id==="compare")rCmp();
+  if(id==="insights")rIns();
+  if(id==="docs")rDocs();
+  if(id==="dashboard")rDash();
+}
+
+function rDash(){
+  var t=document.getElementById("dashTbl");if(!t)return;
+  var rows=[...P].sort(function(a,b){return b.s-a.s;}).map(function(p){
+    return '<tr onclick="openDr('+p.id+')">'
+      +'<td><div class="pn">'+p.e+" "+p.n+'</div></td>'
+      +'<td><div class="pc">'+p.cat+'</div></td>'
+      +'<td><div class="sbar"><div class="sbar-t"><div class="sbar-f" style="width:'+p.s+'%;background:'+sc(p.s)+';"></div></div><div class="sbar-v">'+p.s+'</div></div></td>'
+      +'<td>'+ib(p.lv)+'</td>'
+      +'<td style="font-size:.73rem;">'+p.co2+' kg</td></tr>';
+  });
+  t.innerHTML='<thead><tr><th>Product</th><th>Category</th><th>Score</th><th>Impact</th><th>CO2</th></tr></thead><tbody>'+rows.join("")+'</tbody>';
+  if(dCI)dCI.destroy();
+  dCI=new Chart(document.getElementById("dashChart").getContext("2d"),{
+    type:"bar",
+    data:{labels:P.map(function(p){return p.e;}),datasets:[{label:"Score",data:P.map(function(p){return p.s;}),backgroundColor:P.map(function(p){return sc(p.s);}),borderRadius:4,borderWidth:0}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:"#ffffff",titleColor:"#0f2d1a",bodyColor:"#1e5c35",borderColor:"#b8dfc8",borderWidth:1,callbacks:{title:function(i){return P[i[0].dataIndex].n;},label:function(i){return "Score: "+i.parsed.y+"/100";}}}},scales:{x:{grid:{display:false},ticks:{color:"#64748b",font:{size:10}}},y:{grid:{color:"rgba(22,163,74,.08)"},ticks:{color:"#64748b",font:{size:10}},max:100,beginAtZero:true}},animation:{duration:600}}
+  });
+}
+
+function renderGrid(){
+  var q=(document.getElementById("srch")||{value:""}).value.toLowerCase();
+  var list=P.filter(function(p){return (aF==="all"||p.cat===aF)&&(!q||p.n.toLowerCase().indexOf(q)>-1||p.cat.toLowerCase().indexOf(q)>-1);});
+  var g=document.getElementById("prodGrid");if(!g)return;
+  if(!list.length){g.innerHTML='<p style="color:var(--t3);padding:3rem;grid-column:1/-1;text-align:center;">No products found.</p>';return;}
+  g.innerHTML=list.map(function(p){
+    return '<div class="pcard" onclick="openDr('+p.id+')">'
+      +'<div class="pcard-top">'
+      +'<div class="pc-hd"><div class="pc-em">'+p.e+'</div>'+ib(p.lv)+'</div>'
+      +'<div class="pc-name">'+p.n+'</div>'
+      +'<div class="pc-cat">'+p.cat+'</div>'
+      +'<div class="pc-sb"><div class="pc-sf" style="width:'+p.s+'%;background:'+sc(p.s)+';"></div></div>'
+      +'<div class="pc-sr"><span class="pc-sl">Impact Score</span><span class="pc-sv">'+p.s+'/100</span></div>'
+      +'<div class="pc-mets">'
+      +'<div class="pm"><div class="pm-v">'+p.co2+' kg</div><div class="pm-k">CO2</div></div>'
+      +'<div class="pm"><div class="pm-v">'+(p.w>=1000?(p.w/1000).toFixed(1)+"k":p.w)+' L</div><div class="pm-k">Water</div></div>'
+      +'<div class="pm"><div class="pm-v">'+p.en+' kWh</div><div class="pm-k">Energy</div></div>'
+      +'<div class="pm"><div class="pm-v">'+p.ws+' kg</div><div class="pm-k">Waste</div></div>'
+      +'</div></div>'
+      +'<div class="pcard-ft"><span>'+p.issue+'</span><button class="vlink">Details &#8594;</button></div>'
+      +'</div>';
+  }).join("");
+}
+function setF(c,b){aF=c;document.querySelectorAll(".fp").forEach(function(x){x.classList.remove("on");});b.classList.add("on");renderGrid();}
+
+function openDr(id){
+  var p=P.find(function(x){return x.id===id;});
+  document.getElementById("d-em").textContent=p.e;
+  document.getElementById("d-nm").textContent=p.n;
+  document.getElementById("d-cat").textContent=p.cat;
+  var lx=LV[p.lv]||LV.vl;
+  var badge=document.getElementById("d-badge");badge.className="ib "+lx.c;badge.textContent=lx.l;
+  var stages=p.st.map(function(s){
+    return '<div class="lci"><div class="lci-ic">'+s.i+'</div><div class="lci-b"><div class="lci-n">'+s.n+'</div><div class="lci-t">'+s.t+'</div><div class="dchips"><span class="dchip">CO2 '+s.c+'</span><span class="dchip">Water '+s.w+'</span><span class="dchip">Energy '+s.e+'</span><span class="dchip">Waste '+s.ws+'</span></div></div></div>';
+  }).join("");
+  var alts=p.al.map(function(a){
+    return '<div class="alt-row"><div><div class="alt-n">'+a.n+'</div><div class="alt-d">'+a.d+'</div></div><div class="alt-s">'+a.s+'</div></div>';
+  }).join("");
+  document.getElementById("d-body").innerHTML=
+    '<div class="dr-score"><div class="dbs"><div class="dbs-n" style="color:'+sc(p.s)+'">'+p.s+'</div><div class="dbs-l">/ 100</div></div>'
+    +'<div class="dr-bars">'
+    +'<div class="drb"><span class="drb-l">CO2</span><div class="drb-t"><div class="drb-f" style="width:'+Math.min(p.co2/70*100,100)+'%;background:rgba(239,68,68,.75);"></div></div><span class="drb-v">'+p.co2+' kg</span></div>'
+    +'<div class="drb"><span class="drb-l">Water</span><div class="drb-t"><div class="drb-f" style="width:'+Math.min(p.w/12500*100,100)+'%;background:rgba(59,130,246,.75);"></div></div><span class="drb-v">'+(p.w>=1000?(p.w/1000).toFixed(1)+"kL":p.w+"L")+'</span></div>'
+    +'<div class="drb"><span class="drb-l">Energy</span><div class="drb-t"><div class="drb-f" style="width:'+Math.min(p.en/980*100,100)+'%;background:rgba(249,115,22,.75);"></div></div><span class="drb-v">'+p.en+' kWh</span></div>'
+    +'<div class="drb"><span class="drb-l">Waste</span><div class="drb-t"><div class="drb-f" style="width:'+Math.min(p.ws/82*100,100)+'%;background:rgba(34,197,94,.75);"></div></div><span class="drb-v">'+p.ws+' kg</span></div>'
+    +'</div></div>'
+    +'<div class="sec-l" style="margin-bottom:.65rem;">Life Cycle Breakdown</div>'
+    +'<div class="lc-wrap">'+stages+'</div>'
+    +'<div class="sec-l" style="margin-top:1rem;margin-bottom:.65rem;">&#127807; Greener Alternatives</div>'
+    +alts
+    +'<div style="margin-top:1rem;background:#e8f5ee;border:1px solid #b8dfc8;border-radius:10px;padding:1rem;">'
+    +'<div style="font-size:.75rem;font-weight:700;color:#0f2d1a;margin-bottom:.5rem;">&#127919; Should You Switch?</div>'
+    +(function(){
+        if(p.s>=70) return '<div style="font-size:.73rem;color:#dc2626;font-weight:600;">&#9888; HIGH PRIORITY — Switching from this product will make a significant difference to your carbon footprint. Try at least one alternative above.</div>';
+        if(p.s>=50) return '<div style="font-size:.73rem;color:#ea580c;font-weight:600;">&#9432; CONSIDER SWITCHING — This product has moderate impact. Small changes here add up over time.</div>';
+        if(p.s>=35) return '<div style="font-size:.73rem;color:#ca8a04;font-weight:600;">&#10003; LOW PRIORITY — This product has below-average impact. Focus on higher-impact items first.</div>';
+        return '<div style="font-size:.73rem;color:#16a34a;font-weight:600;">&#10003; GOOD CHOICE — This product has very low environmental impact. Keep using it!</div>';
+      })()
+    +'</div>';
+  document.getElementById("ovl").classList.add("on");
+}
+function cd(e){if(e.target.id==="ovl")document.getElementById("ovl").classList.remove("on");}
+
+function rCmp(){
+  document.getElementById("cmpGrid").innerHTML=P.map(function(p){
+    return '<button class="cpill'+(cmpList.indexOf(p.id)>-1?" on":"") +'" onclick="tCmp('+p.id+',this)">'+p.e+" "+p.n+'</button>';
+  }).join("");
+  var ch=cmpList.length?P.filter(function(p){return cmpList.indexOf(p.id)>-1;}):P.slice(0,4);
+  var rows=[
+    {k:"s",l:"Impact Score",f:function(v,a){var b=Math.min.apply(null,a);return "<strong>"+v+"</strong>/100"+(v===b?'<span class="best">Best</span>':"");}},
+    {k:"lv",l:"Impact Level",f:function(v){return ib(v);}},
+    {k:"co2",l:"CO2 Total",f:function(v,a){var b=Math.min.apply(null,a);return v+" kg"+(v===b?'<span class="best">Best</span>':"");}},
+    {k:"w",l:"Water Used",f:function(v,a){var b=Math.min.apply(null,a);return v.toLocaleString()+" L"+(v===b?'<span class="best">Best</span>':"");}},
+    {k:"en",l:"Energy",f:function(v,a){var b=Math.min.apply(null,a);return v+" kWh"+(v===b?'<span class="best">Best</span>':"");}},
+    {k:"ws",l:"Waste",f:function(v,a){var b=Math.min.apply(null,a);return v+" kg"+(v===b?'<span class="best">Best</span>':"");}},
+    {k:"rc",l:"Recyclability",f:function(v,a){var b=Math.max.apply(null,a);return v+"%"+(v===b?'<span class="best">Best</span>':"");}},
+  ];
+  var thead='<thead><tr><th>Metric</th>'+ch.map(function(p){return '<th class="pc">'+p.e+" "+p.n+'</th>';}).join("")+'</tr></thead>';
+  var tbody='<tbody>'+rows.map(function(r){
+    return '<tr><td class="mlbl">'+r.l+'</td>'+ch.map(function(p){var a=ch.map(function(x){return x[r.k];});return '<td>'+r.f(p[r.k],a)+'</td>';}).join("")+'</tr>';
+  }).join("")+'</tbody>';
+  document.getElementById("cmpTbl").innerHTML=thead+tbody;
+}
+function tCmp(id){
+  var i=cmpList.indexOf(id);
+  if(i>-1){cmpList.splice(i,1);}else{if(cmpList.length>=4){alert("Max 4 products");return;}cmpList.push(id);}
+  rCmp();
+}
+
+function bPills(){
+  var c=document.getElementById("prodPills");if(!c)return;
+  c.innerHTML='<button class="ip on" onclick="setAP()">All</button>'+P.map(function(p){return '<button class="ip on" onclick="tAP('+p.id+',this)">'+p.e+" "+p.n.split(" ")[0]+'</button>';}).join("");
+}
+function setAP(){aProd=new Set(P.map(function(p){return p.id;}));document.querySelectorAll("#prodPills .ip").forEach(function(b){b.classList.add("on");});rIns();}
+function tAP(id,btn){if(aProd.has(id))aProd.delete(id);else aProd.add(id);btn.classList.toggle("on");rIns();}
+function setM(m,btn){insMetric=m;document.querySelectorAll(".ins-ctrl .ip").forEach(function(b){if(["Impact Score","CO2","Water","Energy","Waste"].indexOf(b.textContent.trim())>-1)b.classList.remove("on");});btn.classList.add("on");rIns();}
+function setCT(t,btn){insType=t;document.querySelectorAll(".ctb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");rIns();}
+
+function rIns(){
+  var mm=MM[insMetric];
+  var vis=P.filter(function(p){return aProd.has(p.id);});
+  var labels=vis.map(function(p){return p.e+" "+p.n;});
+  var vals=vis.map(function(p){return p[mm.dk];});
+  var colors=vis.map(function(p,i){return PAL[P.indexOf(p)%PAL.length];});
+  var isPie=insType==="pie"||insType==="doughnut";
+  document.getElementById("insTitle").textContent=mm.l+" - "+vis.length+" Products";
+  document.getElementById("insSub").textContent=mm.s+" ("+mm.u+")";
+  var ds=[{label:mm.l,data:vals,backgroundColor:isPie?colors:colors.map(function(c){return c+"bb";}),borderColor:colors,borderWidth:isPie?2:0,borderRadius:isPie?0:4,tension:.4,fill:insType==="line"?{target:"origin",above:"rgba(34,197,94,.05)"}:false,pointBackgroundColor:colors,pointRadius:insType==="line"?4:0,pointHoverRadius:6}];
+  if(iCI)iCI.destroy();
+  iCI=new Chart(document.getElementById("insChart").getContext("2d"),{
+    type:insType,data:{labels:labels,datasets:ds},
+    options:{responsive:true,plugins:{
+      legend:{display:isPie,position:"right",labels:{color:"#94a3b8",font:{family:"Inter",size:10},boxWidth:10,padding:10}},
+      tooltip:{backgroundColor:"#ffffff",titleColor:"#0f2d1a",bodyColor:"#1e5c35",borderColor:"#b8dfc8",borderWidth:1,callbacks:{label:function(c){if(isPie){var total=c.dataset.data.reduce(function(a,b){return a+b;},0);var pct=total>0?((c.parsed/total)*100).toFixed(1):0;return c.label+": "+c.parsed+" "+mm.u+" ("+pct+"%)";}return c.label+": "+c.parsed.y+" "+mm.u;}}},
+      datalabels:isPie?{anchor:"end",align:"end",offset:10,color:"#0f2d1a",backgroundColor:"rgba(255,255,255,0.82)",borderRadius:4,padding:{top:2,bottom:2,left:4,right:4},font:{weight:"bold",size:10,family:"Inter"},formatter:function(value,ctx){var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);var pct=((value/total)*100).toFixed(1);return pct+"%";},display:function(ctx){var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);return((ctx.dataset.data[ctx.dataIndex]/total)*100)>=3;}}:{display:false}
+    },scales:isPie?{}:{
+      x:{grid:{display:false},ticks:{color:"#64748b",font:{size:10}}},
+      y:{grid:{color:"rgba(22,163,74,.08)"},ticks:{color:"#64748b",font:{size:10}},beginAtZero:true}
+    },animation:{duration:420}}
+  });
+  var rP=[...P].sort(function(a,b){return b.rc-a.rc;});
+  if(rCI)rCI.destroy();
+  rCI=new Chart(document.getElementById("recChart").getContext("2d"),{
+    type:"bar",data:{labels:rP.map(function(p){return p.e;}),datasets:[{label:"%",data:rP.map(function(p){return p.rc;}),backgroundColor:rP.map(function(p){return p.rc>=70?"rgba(34,197,94,.8)":p.rc>=40?"rgba(249,115,22,.8)":"rgba(239,68,68,.8)";}),borderRadius:3,borderWidth:0}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:"#ffffff",titleColor:"#0f2d1a",bodyColor:"#1e5c35",borderColor:"#b8dfc8",borderWidth:1,callbacks:{title:function(i){return rP[i[0].dataIndex].n;},label:function(i){return i.parsed.y+"%";}}}},scales:{x:{grid:{display:false},ticks:{color:"#64748b",font:{size:10}}},y:{max:100,grid:{color:"rgba(22,163,74,.08)"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return v+"%";}}}},animation:{duration:420}}
+  });
+  if(aCI)aCI.destroy();
+  aCI=new Chart(document.getElementById("altChart").getContext("2d"),{
+    type:"doughnut",data:{labels:P.map(function(p){return p.e+" "+p.n.split(" ")[0];}),datasets:[{data:P.map(function(p){return p.as;}),backgroundColor:P.map(function(p){return p.as>=80?"rgba(22,163,74,.82)":p.as>=60?"rgba(132,204,22,.82)":"rgba(202,138,4,.82)";}),borderWidth:2,borderColor:"#ffffff",hoverOffset:5}]},
+    options:{responsive:true,plugins:{
+      legend:{position:"right",labels:{color:"#1e5c35",font:{family:"Inter",size:9},boxWidth:9,padding:8}},
+      tooltip:{backgroundColor:"#ffffff",titleColor:"#0f2d1a",bodyColor:"#1e5c35",borderColor:"#b8dfc8",borderWidth:1,callbacks:{label:function(c){var total=c.dataset.data.reduce(function(a,b){return a+b;},0);var pct=total>0?((c.parsed/total)*100).toFixed(1):0;return c.label+": "+c.parsed+"% CO2 saved ("+pct+"% of chart)";}}},
+      datalabels:{anchor:"end",align:"end",offset:10,color:"#0f2d1a",backgroundColor:"rgba(255,255,255,0.82)",borderRadius:4,padding:{top:2,bottom:2,left:4,right:4},font:{weight:"bold",size:9,family:"Inter"},formatter:function(value,ctx){var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);var pct=((value/total)*100).toFixed(1);return pct+"%";},display:function(ctx){var total=ctx.dataset.data.reduce(function(a,b){return a+b;},0);return((ctx.dataset.data[ctx.dataIndex]/total)*100)>=4;}}
+    },animation:{duration:420}}
+  });
+}
+
+function rDocs(){
+  var t=document.getElementById("docsTbl");if(!t)return;
+  t.innerHTML=P.map(function(p){
+    return '<tr><td><strong>'+p.e+" "+p.n+'</strong></td><td>'+p.cat+'</td><td><strong style="color:'+sc(p.s)+'">'+p.s+'/100</strong></td><td>'+ib(p.lv)+'</td><td style="font-size:.7rem;color:var(--t2);">'+p.issue+'</td></tr>';
+  }).join("");
+}
+
+bPills();renderGrid();rDash();
+</script>
+</body>
+</html>
